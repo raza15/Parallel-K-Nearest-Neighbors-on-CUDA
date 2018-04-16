@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#define MAX_VALUE 2147483647
 
 const int USERS = 3;
 const int ATTRIBUTES = 5;
-const int K = 1;
+const int K = 2;
 
 void printMatrix(int matrix[USERS][ATTRIBUTES]) {
 	int row; int col;
@@ -27,6 +28,18 @@ void printScores(int matrix[USERS][USERS]) {
         }
 }
 
+void printTopKClosest(int topKClosest[USERS][K]) {
+	int row; int col;
+        printf("Top K Closest Data Points For Each Data Point:-\n");
+        for(row = 0; row < USERS; row++) {
+		printf("%d: ", row);
+                for(col = 0; col < K; col++) {
+                        printf("%d, ", topKClosest[row][col]);
+                }
+                printf("\n");
+        }
+}
+
 void readDataFromFile(const char * fileName, int matrix[USERS][ATTRIBUTES]) {
 	FILE * fp;  
         fp = fopen(fileName, "r+");
@@ -38,6 +51,7 @@ void readDataFromFile(const char * fileName, int matrix[USERS][ATTRIBUTES]) {
         }
 }
 
+// todo: handle for the case where distance exceeds the MAX_VALUE of INTEGER
 void eucladeanDistance(int row1[ATTRIBUTES], int row2[ATTRIBUTES], int * distance) {
 	int col;
 	*distance = 0;
@@ -69,6 +83,30 @@ void calculateScores(int matrix[USERS][ATTRIBUTES], int scores[USERS][USERS]) {
 	}
 }
 
+// time complexity: O(n.k) where n = # of users and k = # of closest neighbors to calculate
+// By using the max heap of size k, we can can reduce the time complexity to: O(nlogk)
+// But that won't make much of a difference because k <<< n
+void calculateTopKClosest(int scores[USERS][USERS], int topKClosest[USERS][K]) {
+	int minValue, minIndex, value, user, k, index;
+	for(user = 0; user < USERS; user++) {
+		for(k = 0; k < K; k++) {
+			minValue = MAX_VALUE;
+			minIndex = -1;
+			for(index = 0; index < USERS; index++) {
+				value = scores[user][index];
+				if(value < minValue && index != user) {
+					minValue = value;
+					minIndex = index;
+				}
+			}
+			if(minIndex != -1) {
+				scores[user][minIndex] = MAX_VALUE;
+			}
+			topKClosest[user][k] = minIndex;
+		}
+	}
+}
+
 int main() {
 	int matrix[USERS][ATTRIBUTES];
 	readDataFromFile("testData.txt", matrix);
@@ -76,5 +114,12 @@ int main() {
 	int scores[USERS][USERS];
 	calculateScores(matrix, scores);
 	printScores(scores);
+	if(K <= 0 || K >= USERS) {
+		printf("Ivalid K: K should be > 0 && < # of users");
+		return;
+	}
+	int topKClosest[USERS][K];
+	calculateTopKClosest(scores, topKClosest);
+	printTopKClosest(topKClosest);
 	return 0;
 }
