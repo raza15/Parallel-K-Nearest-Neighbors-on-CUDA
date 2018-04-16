@@ -38,8 +38,35 @@ void readDataFromFile(const char * fileName, int matrix[USERS][ATTRIBUTES]) {
         }
 }
 
-void calculateScores(int matrix[USERS][ATTRIBUTES], int scores[USERS][USERS]) {
+void eucladeanDistance(int row1[ATTRIBUTES], int row2[ATTRIBUTES], int * distance) {
+	int col;
+	*distance = 0;
+	for(col = 0; col < ATTRIBUTES; col++) {
+		int difference = row1[col] - row2[col];
+		*distance = *distance + difference * difference;
+	}
+}
 
+void copyAllAttributes(int copyFrom[ATTRIBUTES], int copyTo[ATTRIBUTES]) {
+	int index;
+	for(index = 0; index < ATTRIBUTES; index++) {
+		copyTo[index] = copyFrom[index];
+	}
+}
+
+void calculateScores(int matrix[USERS][ATTRIBUTES], int scores[USERS][USERS]) {
+	int row; int col;
+	int row1[ATTRIBUTES];
+	int row2[ATTRIBUTES];
+	for(row = 0; row < USERS; row++) {
+		copyAllAttributes(matrix[row], row1);
+		for(col = 0; col < USERS; col++) {
+			copyAllAttributes(matrix[col], row2);
+			int distance;
+			eucladeanDistance(row1, row2, &distance);
+			scores[row][col] = distance;
+		}
+	}
 }
 
 int main() {
