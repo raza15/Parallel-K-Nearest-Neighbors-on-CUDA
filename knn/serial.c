@@ -83,7 +83,7 @@ void calculateScores(int matrix[USERS][ATTRIBUTES], int scores[USERS][USERS]) {
 	}
 }
 
-// time complexity: O(n.k) where n = # of users and k = # of closest neighbors to calculate
+// time complexity for KNN for 1 user: O(n.k) where n = # of users and k = # of closest neighbors to calculate
 // By using the max heap of size k, we can can reduce the time complexity to: O(nlogk)
 // But that won't make much of a difference because k <<< n
 void calculateTopKClosest(int scores[USERS][USERS], int topKClosest[USERS][K]) {
