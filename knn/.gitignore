@@ -2,3 +2,8 @@ a.out
 cuda
 knnCuda
 serial
+*.swp
+serial_100
+serial_1000
+serial_5000
+serial_10000

@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #define MAX_VALUE 2147483647
 
-const int USERS = 3;
+const int USERS = 100;
 const int ATTRIBUTES = 5;
 const int K = 2;
 
@@ -108,8 +109,9 @@ void calculateTopKClosest(int scores[USERS][USERS], int topKClosest[USERS][K]) {
 }
 
 int main() {
+    time_t start = time(NULL);
     int matrix[USERS][ATTRIBUTES];
-    readDataFromFile("testData.txt", matrix);
+    readDataFromFile("testData_100.txt", matrix);
     printMatrix(matrix);
     int scores[USERS][USERS];
     calculateScores(matrix, scores);
@@ -121,6 +123,7 @@ int main() {
     int topKClosest[USERS][K];
     calculateTopKClosest(scores, topKClosest);
     printTopKClosest(topKClosest);
+    printf("\nTime taken: %ld seconds\n", time(NULL) - start);
     return 0;
 }
 
