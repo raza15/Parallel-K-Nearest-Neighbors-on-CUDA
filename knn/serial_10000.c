@@ -6,6 +6,7 @@
 const int USERS = 10000;
 const int ATTRIBUTES = 5;
 const int K = 2;
+int scores[USERS][USERS];
 
 void printMatrix(int matrix[USERS][ATTRIBUTES]) {
     int row; int col;
@@ -112,17 +113,16 @@ int main() {
     time_t start = time(NULL);
     int matrix[USERS][ATTRIBUTES];
     readDataFromFile("testData_10000.txt", matrix);
-    printMatrix(matrix);
-    int scores[USERS][USERS];
+    //printMatrix(matrix);
     calculateScores(matrix, scores);
-    printScores(scores);
+    //printScores(scores);
     if(K <= 0 || K >= USERS) {
         printf("Ivalid K: K should be > 0 && < # of users");
         return 0;
     }
     int topKClosest[USERS][K];
     calculateTopKClosest(scores, topKClosest);
-    printTopKClosest(topKClosest);
+    //printTopKClosest(topKClosest);
     printf("\nTime taken: %ld seconds\n", time(NULL) - start);
     return 0;
 }

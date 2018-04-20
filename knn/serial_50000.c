@@ -3,7 +3,7 @@
 #include <time.h>
 #define MAX_VALUE 2147483647
 
-const int USERS = 5000;
+const int USERS = 50000;
 const int ATTRIBUTES = 5;
 const int K = 2;
 int scores[USERS][USERS];
@@ -51,17 +51,6 @@ void readDataFromFile(const char * fileName, int matrix[USERS][ATTRIBUTES]) {
                         fscanf(fp, "%d", &matrix[row][col]);
                 }
         }
-}
-
-void makeData(int matrix[USERS][ATTRIBUTES]) {
-    printf("Made it!\n");
-    srand(time(NULL));
-    int row; int col;
-    for(row = 0; row < USERS; row++) {
-        for(col = 0; col < ATTRIBUTES; col++) {
-            matrix[row][col] = rand() %15;
-        }
-    }
 }
 
 // todo: handle for the case where distance exceeds the MAX_VALUE of INTEGER
@@ -123,7 +112,7 @@ void calculateTopKClosest(int scores[USERS][USERS], int topKClosest[USERS][K]) {
 int main() {
     time_t start = time(NULL);
     int matrix[USERS][ATTRIBUTES];
-    readDataFromFile("testData_5000.txt", matrix);
+    readDataFromFile("testData_50000.txt", matrix);
     //printMatrix(matrix);
     calculateScores(matrix, scores);
     //printScores(scores);
