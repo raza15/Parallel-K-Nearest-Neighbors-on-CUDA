@@ -1,78 +1,133 @@
 #include <stdio.h>
 #include <stdlib.h>
-
 #define MAX_VALUE 2147483647
 
-const int USERS = 3;
-const int ATTRIBUTES = 5;
-// const int K = 2;
-
-void readDataFromFile(const char * fileName, int matrix[USERS][ATTRIBUTES]) {
-	FILE * fp;  
-        fp = fopen(fileName, "r+");
-        int row; int col;
-        for(row = 0; row < USERS; row++) {
-                for(col = 0; col < ATTRIBUTES; col++) {
-                        fscanf(fp, "%d", &matrix[row][col]);
-                }
-        }
-}
-
-void printMatrix(int matrix[USERS][ATTRIBUTES]) {
-	int row; int col;
-	printf("Matrix:-\n");
-	for(row = 0; row < USERS; row++) {
-		for(col = 0; col < ATTRIBUTES; col++) {
-			printf("%d, ", matrix[row][col]);
+void printMatrix(int *matrix, int users, int attributes) {
+	// printf("Matrix:-\n");
+	for(int i = 0; i < (users * attributes); i++) {
+		if(i % attributes == 0 && i != 0) {
+			printf("\n%d ", matrix[i]);
+		} else {
+			printf("%d ", matrix[i]);
 		}
-		printf("\n");
-	}
-}
-
-void printArray(int * array, int size) {
-	int i;
-	for(i = 0; i < size; i++) {
-		printf("%d, ", array[i]);
 	}
 	printf("\n");
 }
 
-int* matrixTo1DArray(int matrix[USERS][ATTRIBUTES]) {
-	int* newArray = new int[USERS*ATTRIBUTES];
-	int h; int w;
-	for(h = 0; h < USERS; h++) {
-		for(w = 0; w < ATTRIBUTES; w++) {
-			newArray[ATTRIBUTES * h + w] = matrix[h][w];
-		}
-	}
-	return newArray;
-}
-/*
-__global__ void calculateScoresKernel(int * matrixArray, int * scores) {
-	int row; int col;
-	int row1[ATTRIBUTES];
-	int row2[ATTRIBUTES];
-	for(row = 0; row < USERS; row++) {
-		copyAllAttributes(matrix[row], row1);
-		for(col = 0; col < USERS; col++) {
-			copyAllAttributes(matrix[col], row2);
-			int distance;
-			eucladeanDistance(row1, row2, &distance);
-			scores[row][col] = distance;
-		}
-	}
-}
-*/
-int* calculateScores(int * array) {
-	int * output = new int[USERS*USERS];
-	return output;
+void preliminarySteps(int argc, char** argv, int** dataSetPtr, int** scoresPtr, int* usersPtr, int* attributesPtr) {
+    // Check input
+    if(argc < 4) {
+        printf("Usage: %s <k> <users> <attributes>\n", argv[0]);
+        exit(0);
+    }
+	int * dataSet;
+	int k = atoi(argv[1]);
+	int users = atoi(argv[2]);
+	int attributes = atoi(argv[3]);
+	*usersPtr = users;
+	*attributesPtr = attributes;
+
+	dataSet = (int *)malloc(sizeof(int) * users * attributes);
+    if(dataSet != NULL) {
+        printf("Allocated an array for %d users and %d attributes\n", users, attributes);
+    } else {
+        printf("Couldn't allocate dataSet array, quitting!\n");
+        exit(0);
+    }
+
+    // Seed the RNG
+    srand(time(NULL));
+    // Now fill dataSet with some values
+    for(int i=0; i < (users * attributes); i++)
+        //dataSet[i] = rand() % 1000; // Random integers between 0 and 1,000
+        dataSet[i] = rand() % 15; // Random integers between 0 and 1,000
+    *dataSetPtr = dataSet;
+    int *scores;
+    scores = (int *)malloc(sizeof(int) * users * users);
+    if(scores != NULL) {
+        printf("Allocated a square scores array for %d users\n", users);
+    } else {
+        printf("Couldn't allocate scores array, quitting!\n");
+        exit(0);
+    }
+    *scoresPtr = scores;
 }
 
-int main(void) {
-	int matrix[USERS][ATTRIBUTES];
-	readDataFromFile("testData.txt", matrix);
-	printMatrix(matrix);
-	int * matrixArray = matrixTo1DArray(matrix);
-	// printArray(matrixArray, USERS*ATTRIBUTES);
-	int * scores = calculateScores(matrixArray);
+void calculateScore(int* matrix, int* scores, int users, int attributes, int user1, int user2) {
+	int answer = 0;
+	int user1Start = attributes*user1;
+	int user1End = user1Start + attributes - 1;
+	int user2Start = attributes*user2;
+	int user2End = user2Start + attributes - 1;
+	
+	int i; int j; int difference;
+	for(i = user1Start, j = user2Start; i <= user1End && j <= user2End ; i++, j++) {
+		difference = matrix[i] - matrix[j];
+		answer += difference*difference;
+	}
+	
+	scores[user1*users + user2] = answer;
+}
+
+void calculateScores(int *matrix, int *scores, int users, int attributes) {
+	int user1; int user2;
+	for(user1 = 0; user1 < users; user1++) {
+		for(user2 = 0; user2 < users; user2++) {
+			calculateScore(matrix, scores, users, attributes, user1, user2);
+		}
+	}
+}
+
+__global__ void calculateScoreKernel(int *matrix, int *scores, int users, int attributes) {
+        int user1 = 0;
+	int user2 = 1;
+	
+        int answer = 0;
+        int user1Start = attributes*user1;
+        int user1End = user1Start + attributes - 1;
+        int user2Start = attributes*user2;
+        int user2End = user2Start + attributes - 1;
+
+        int i; int j; int difference;
+        for(i = user1Start, j = user2Start; i <= user1End && j <= user2End ; i++, j++) {
+                difference = matrix[i] - matrix[j];
+                answer += difference*difference;
+        }
+
+        scores[user1*users + user2] = -5;
+}
+
+void launchCalculateScoreKernel(int * dataSet, int * scores, int users, int attributes) {
+	int * dev_dataSet;
+	int * dev_scores;
+	
+	cudaMalloc((void**) &dev_dataSet, users*attributes*sizeof(int));
+	cudaMalloc((void**) &dev_scores, users*users*sizeof(int));
+	
+	cudaMemcpy(dev_dataSet, dataSet, users*attributes*sizeof(int), cudaMemcpyHostToDevice);
+	cudaMemcpy(dev_scores, scores, users*users*sizeof(int), cudaMemcpyHostToDevice);
+
+	calculateScoreKernel<<<1, 1>>>(dev_dataSet, dev_scores, users, attributes);
+
+	cudaMemcpy(scores, dev_scores, users*users*sizeof(int), cudaMemcpyDeviceToHost);
+}
+
+int main(int argc, char **argv) {
+	int * dataSet; int * scores; int users; int attributes;
+	preliminarySteps(argc, argv, &dataSet, &scores, &users, &attributes);
+	
+	printf("Matrix:-\n");
+	printMatrix(dataSet, users, attributes);
+
+	// serial
+	calculateScores(dataSet, scores, users, attributes);
+
+	// launchCalculateScoreKernel(dataSet, scores, users, attributes);	
+	
+	printf("Scores:-\n");
+	printMatrix(scores, users, users);
+	
+	// Clean up after ourselves
+	free(dataSet); free(scores);
+	return 0;
 }
