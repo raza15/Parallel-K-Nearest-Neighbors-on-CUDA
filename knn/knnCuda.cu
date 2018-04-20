@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define MAX_VALUE 2147483647
+#define numThreads 1024
 
 void printMatrix(int *matrix, int users, int attributes) {
 	// printf("Matrix:-\n");
@@ -79,8 +80,8 @@ void calculateScores(int *matrix, int *scores, int users, int attributes) {
 }
 
 __global__ void calculateScoreKernel(int *matrix, int *scores, int users, int attributes) {
-        int user1 = 0;
-	int user2 = 1;
+        int user1 = numThreads*blockIdx.x + threadIdx.x;
+	int user2 = numThreads*blockIdx.y + threadIdx.y;
 	
         int answer = 0;
         int user1Start = attributes*user1;
@@ -94,7 +95,7 @@ __global__ void calculateScoreKernel(int *matrix, int *scores, int users, int at
                 answer += difference*difference;
         }
 
-        scores[user1*users + user2] = -5;
+        scores[user1*users + user2] = -58;
 }
 
 void launchCalculateScoreKernel(int * dataSet, int * scores, int users, int attributes) {
