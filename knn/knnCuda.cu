@@ -120,9 +120,9 @@ int main(int argc, char **argv) {
 	printMatrix(dataSet, users, attributes);
 
 	// serial
-	calculateScores(dataSet, scores, users, attributes);
+	// calculateScores(dataSet, scores, users, attributes);
 
-	// launchCalculateScoreKernel(dataSet, scores, users, attributes);	
+	launchCalculateScoreKernel(dataSet, scores, users, attributes);	
 	
 	printf("Scores:-\n");
 	printMatrix(scores, users, users);
