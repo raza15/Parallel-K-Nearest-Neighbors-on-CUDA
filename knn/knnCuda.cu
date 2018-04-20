@@ -30,7 +30,7 @@ void preliminarySteps(int argc, char** argv, int** dataSetPtr, int** scoresPtr, 
 	*usersPtr = users;
 	*attributesPtr = attributes;
 
-	dataSet = (int *)malloc(sizeof(int) * users * attributes);
+	dataSet = (int*) malloc(sizeof(int) * users * attributes);
     if(dataSet != NULL) {
         printf("Allocated an array for %d users and %d attributes\n", users, attributes);
     } else {
@@ -84,7 +84,8 @@ void calculateScores(int *matrix, int *scores, int users, int attributes) {
 __global__ void calculateScoreKernel(int *matrix, int *scores, int users, int attributes) {
         int user1 = numThreads*blockIdx.x + threadIdx.x;
 	int user2 = numThreads*blockIdx.y + threadIdx.y;
-	
+
+	if(user1 >= 0 && user1 < users && user2 >= 0 && user2 < users) {
         int answer = 0;
         int user1Start = attributes*user1;
         int user1End = user1Start + attributes - 1;
@@ -96,8 +97,13 @@ __global__ void calculateScoreKernel(int *matrix, int *scores, int users, int at
                 difference = matrix[i] - matrix[j];
                 answer += difference*difference;
         }
-
+	/*
+	# if __CUDA_ARCH__>=200
+                printf("%d, %d, %d, %d => %d \n", blockIdx.x, blockIdx.y, threadIdx.x, threadIdx.y, answer);
+        #endif
+	*/
         scores[user1*users + user2] = answer;
+	}
 }
 
 void launchCalculateScoreKernel(int * dataSet, int * scores, int users, int attributes) {
@@ -128,10 +134,13 @@ int main(int argc, char **argv) {
 	// printMatrix(dataSet, users, attributes);
 
 	// serial
-	// calculateScores(dataSet, scores, users, attributes);
+	calculateScores(dataSet, scores, users, attributes);
+
+	// printf("Scores:-\n");
+        // printMatrix(scores, users, users);
 	
 	// cuda parallel
-	launchCalculateScoreKernel(dataSet, scores, users, attributes);	
+	// launchCalculateScoreKernel(dataSet, scores, users, attributes);	
 	
 	// printf("Scores:-\n");
 	// printMatrix(scores, users, users);
