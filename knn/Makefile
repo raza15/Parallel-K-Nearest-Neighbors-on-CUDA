@@ -1,5 +1,6 @@
 clean:
 	rm -rf a.out cuda knnCuda serial serial_100 serial_1000 serial_5000 serial_10000 serial_50000
+	rm -rf serial_100000
 serial:
 	gcc -o serial serial.c
 cuda:
@@ -19,3 +20,6 @@ testserial10000:
 testserial50000:
 	gcc -o serial_50000 serial_50000.c
 	time ./serial_50000
+testserial100000:
+	gcc -o serial_100000 serial_100000.c
+	time ./serial_100000
