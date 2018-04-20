@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+
 #define MAX_VALUE 2147483647
 #define numThreads 32
 
@@ -116,21 +118,27 @@ void launchCalculateScoreKernel(int * dataSet, int * scores, int users, int attr
 	cudaMemcpy(scores, dev_scores, users*users*sizeof(int), cudaMemcpyDeviceToHost);
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv) {	
 	int * dataSet; int * scores; int users; int attributes;
 	preliminarySteps(argc, argv, &dataSet, &scores, &users, &attributes);
 	
-	printf("Matrix:-\n");
-	printMatrix(dataSet, users, attributes);
+	clock_t start = clock();
+	
+	// printf("Matrix:-\n");
+	// printMatrix(dataSet, users, attributes);
 
 	// serial
 	// calculateScores(dataSet, scores, users, attributes);
-
+	
+	// cuda parallel
 	launchCalculateScoreKernel(dataSet, scores, users, attributes);	
 	
-	printf("Scores:-\n");
-	printMatrix(scores, users, users);
-	
+	// printf("Scores:-\n");
+	// printMatrix(scores, users, users);
+
+	clock_t end = clock();
+	printf("Time taken: %Lf seconds\n", (long double)(end - start)/CLOCKS_PER_SEC);
+			
 	// Clean up after ourselves
 	free(dataSet); free(scores);
 	return 0;
