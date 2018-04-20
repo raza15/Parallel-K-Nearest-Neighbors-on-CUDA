@@ -3,9 +3,9 @@
 #include <time.h>
 #define MAX_VALUE 2147483647
 
-const int USERS = 100;
-const int ATTRIBUTES = 5;
-const int K = 2;
+#define USERS 100
+#define ATTRIBUTES 5
+#define K 2
 int scores[USERS][USERS];
 
 void printMatrix(int matrix[USERS][ATTRIBUTES]) {
