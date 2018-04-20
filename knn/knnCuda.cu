@@ -95,7 +95,7 @@ __global__ void calculateScoreKernel(int *matrix, int *scores, int users, int at
                 answer += difference*difference;
         }
 
-        scores[user1*users + user2] = -58;
+        scores[user1*users + user2] = answer;
 }
 
 void launchCalculateScoreKernel(int * dataSet, int * scores, int users, int attributes) {
