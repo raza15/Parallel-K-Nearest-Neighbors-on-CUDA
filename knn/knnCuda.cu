@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #define MAX_VALUE 2147483647
-#define numThreads 1024
+#define numThreads 32
 
 void printMatrix(int *matrix, int users, int attributes) {
 	// printf("Matrix:-\n");
@@ -108,7 +108,10 @@ void launchCalculateScoreKernel(int * dataSet, int * scores, int users, int attr
 	cudaMemcpy(dev_dataSet, dataSet, users*attributes*sizeof(int), cudaMemcpyHostToDevice);
 	cudaMemcpy(dev_scores, scores, users*users*sizeof(int), cudaMemcpyHostToDevice);
 
-	calculateScoreKernel<<<1, 1>>>(dev_dataSet, dev_scores, users, attributes);
+	int numBlocks = (int) ceil(users*1.0/numThreads);
+	dim3 grid( numBlocks, numBlocks, 1 );
+	dim3 block( numThreads, numThreads, 1 );
+	calculateScoreKernel<<< grid, block >>>(dev_dataSet, dev_scores, users, attributes);
 
 	cudaMemcpy(scores, dev_scores, users*users*sizeof(int), cudaMemcpyDeviceToHost);
 }
