@@ -1,0 +1,7 @@
+whichProgramToRun, users, attributes, k, timeTaken (seconds)\n
+serial, 50, 5, 1, 0.000057
+serial, 200, 5, 1, 0.000910
+serial, 800, 5, 1, 0.014561
+serial, 3200, 5, 1, 0.232816
+serial, 12800, 5, 1, 3.705890
+serial, 51, 5, 1, 0.000289

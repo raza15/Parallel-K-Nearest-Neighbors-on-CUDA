@@ -1,0 +1,7 @@
+whichProgramToRun, users, attributes, k, timeTaken (seconds)\n
+parallel, 50, 5, 1, 0.422036
+parallel, 200, 5, 1, 0.419997
+parallel, 800, 5, 1, 0.420490
+parallel, 3200, 5, 1, 0.444060
+parallel, 12800, 5, 1, 0.817969
+parallel, 51200, 5, 1, 0.418711

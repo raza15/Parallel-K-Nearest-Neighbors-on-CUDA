@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 
 #define MAX_VALUE 2147483647
 #define numThreads 32
@@ -17,10 +18,21 @@ void printMatrix(int *matrix, int users, int attributes) {
 	printf("\n");
 }
 
-void preliminarySteps(int argc, char** argv, int** dataSetPtr, int** scoresPtr, int* usersPtr, int* attributesPtr) {
+int checker(char* input, char* check) {
+    int i,result=1;
+    for(i=0; input[i]!='\0' || check[i]!='\0'; i++) {
+        if(input[i] != check[i]) {
+            result=0;
+            break;
+        }
+    }
+    return result;
+}
+
+void preliminarySteps(int argc, char** argv, int** dataSetPtr, int** scoresPtr, int* usersPtr, int* attributesPtr, int* kPtr) {
     // Check input
-    if(argc < 4) {
-        printf("Usage: %s <k> <users> <attributes>\n", argv[0]);
+    if(argc < 5) {
+        printf("Usage: %s <k> <users> <attributes> <serial/parallel>\n", argv[0]);
         exit(0);
     }
 	int * dataSet;
@@ -29,10 +41,11 @@ void preliminarySteps(int argc, char** argv, int** dataSetPtr, int** scoresPtr, 
 	int attributes = atoi(argv[3]);
 	*usersPtr = users;
 	*attributesPtr = attributes;
+	*kPtr = k;
 
 	dataSet = (int*) malloc(sizeof(int) * users * attributes);
     if(dataSet != NULL) {
-        printf("Allocated an array for %d users and %d attributes\n", users, attributes);
+//        printf("Allocated an array for %d users and %d attributes\n", users, attributes);
     } else {
         printf("Couldn't allocate dataSet array, quitting!\n");
         exit(0);
@@ -48,7 +61,7 @@ void preliminarySteps(int argc, char** argv, int** dataSetPtr, int** scoresPtr, 
     int *scores;
     scores = (int *)malloc(sizeof(int) * users * users);
     if(scores != NULL) {
-        printf("Allocated a square scores array for %d users\n", users);
+  //      printf("Allocated a square scores array for %d users\n", users);
     } else {
         printf("Couldn't allocate scores array, quitting!\n");
         exit(0);
@@ -124,30 +137,49 @@ void launchCalculateScoreKernel(int * dataSet, int * scores, int users, int attr
 	cudaMemcpy(scores, dev_scores, users*users*sizeof(int), cudaMemcpyDeviceToHost);
 }
 
-int main(int argc, char **argv) {	
-	int * dataSet; int * scores; int users; int attributes;
-	preliminarySteps(argc, argv, &dataSet, &scores, &users, &attributes);
+void writeToFile(clock_t start, clock_t end, char * whichProgramToRun, int users, int attributes, int k) {
+	FILE * file;
+	if(checker(whichProgramToRun, (char*) "serial")) {
+		file = fopen("results_serial.csv", "a");
+	}else {
+		file = fopen("results_parallel.csv", "a");
+	}
+        long double timeTaken = (long double)(end - start)/CLOCKS_PER_SEC;
+        fprintf(file, "%s, %d, %d, %d, %Lf\n", whichProgramToRun, users, attributes, k, timeTaken);
+        fclose(file);
+	printf("%s, %d, %d, %d, %Lf\n", whichProgramToRun, users, attributes, k, timeTaken);
+}
+
+int main(int argc, char **argv) {
+	int * dataSet; int * scores; int users; int attributes; int k;
+	preliminarySteps(argc, argv, &dataSet, &scores, &users, &attributes, &k);
+	
+	char* whichProgramToRun = argv[4];
 	
 	clock_t start = clock();
-	
+
 	// printf("Matrix:-\n");
 	// printMatrix(dataSet, users, attributes);
 
-	// serial
-	calculateScores(dataSet, scores, users, attributes);
-
-	// printf("Scores:-\n");
-        // printMatrix(scores, users, users);
-	
-	// cuda parallel
-	// launchCalculateScoreKernel(dataSet, scores, users, attributes);	
+	if(checker(whichProgramToRun, (char*) "serial")) {
+		// serial
+		calculateScores(dataSet, scores, users, attributes);	
+	}else if(checker(whichProgramToRun, (char*) "parallel")) {
+		// cuda parallel
+		launchCalculateScoreKernel(dataSet, scores, users, attributes);
+	}else {
+		printf("Enter correct program to run: serial or parallel.\n");
+		free(dataSet); free(scores);
+		exit(0);
+	}
 	
 	// printf("Scores:-\n");
 	// printMatrix(scores, users, users);
 
 	clock_t end = clock();
-	printf("Time taken: %Lf seconds\n", (long double)(end - start)/CLOCKS_PER_SEC);
-			
+
+	writeToFile(start, end, whichProgramToRun, users, attributes, k);
+
 	// Clean up after ourselves
 	free(dataSet); free(scores);
 	return 0;
