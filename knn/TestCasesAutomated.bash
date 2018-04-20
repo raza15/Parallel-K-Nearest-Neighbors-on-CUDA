@@ -12,13 +12,13 @@ attributes=5
 usersStartRange=10
 usersEndRange=89000
 
-for ((users = $usersStartRange; users <= $usersEndRange; users = users*4));
+for ((users = $usersStartRange; users <= $usersEndRange; users = users*2));
 do
 	echo users = $users
 	./knnCuda $k $users $attributes serial
 done
 
-for ((users = $usersStartRange; users <= $usersEndRange; users = users*4));
+for ((users = $usersStartRange; users <= $usersEndRange; users = users*2));
 do
         echo users = $users
         ./knnCuda $k $users $attributes parallel
