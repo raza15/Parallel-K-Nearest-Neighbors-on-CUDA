@@ -2,24 +2,19 @@
 
 rm "results_serial.csv"
 rm "results_parallel.csv"
-echo "whichProgramToRun, users, attributes, k, timeTaken (seconds)\n" > "results_serial.csv"
-echo "whichProgramToRun, users, attributes, k, timeTaken (seconds)\n" > "results_parallel.csv"
-nvcc knnCuda.cu -o knnCuda
+rm "results.csv"
 
-k=1
-attributes=5
+k=100
 
-usersStartRange=10
-usersEndRange=89000
-
-for ((users = $usersStartRange; users <= $usersEndRange; users = users*2));
+for program in "serial" "parallel"
 do
-	echo users = $users
-	./knnCuda $k $users $attributes serial
-done
-
-for ((users = $usersStartRange; users <= $usersEndRange; users = users*2));
-do
-        echo users = $users
-        ./knnCuda $k $users $attributes parallel
+	for attributes in 1 4 16 64 256
+	do
+		for users in 256 512 1024 2048 4096 8192 16384
+		do
+			fileName="results_$program.csv"
+			echo users = $users $fileName
+			./knnCuda $k $users $attributes $program $fileName
+		done
+	done
 done

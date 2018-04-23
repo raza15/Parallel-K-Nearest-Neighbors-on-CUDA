@@ -137,17 +137,77 @@ void launchCalculateScoreKernel(int * dataSet, int * scores, int users, int attr
 	cudaMemcpy(scores, dev_scores, users*users*sizeof(int), cudaMemcpyDeviceToHost);
 }
 
-void writeToFile(clock_t start, clock_t end, char * whichProgramToRun, int users, int attributes, int k) {
+__global__ void calculateKNearestKernel(int * scores, int * kNearest, int users, int K) {
+		int minValue, minIndex, value, user, k, index;
+		user = numThreads*blockIdx.x + threadIdx.x;
+                for(k = 0; k < K; k++) {
+                        minValue = MAX_VALUE;
+                        minIndex = -1;
+                        for(index = 0; index < users; index++) {
+                                value = scores[user*users + index];
+                                if(value < minValue && index != user) {
+                                        minValue = value;
+                                        minIndex = index;
+                                }
+                        }
+                        if(minIndex != -1) {
+                                // scores[user*users + minIndex] = MAX_VALUE;
+                        }
+                        // kNearest[user*users + k] = minIndex;
+                }
+}
+
+// arguments: scores, kNearest, users, k
+void launchCalculateKNearestKernel(int * dataSet, int * scores, int users, int k) {
+	int * dev_dataSet;
+        int * dev_scores;
+
+        cudaMalloc((void**) &dev_dataSet, users*users*sizeof(int));
+        cudaMalloc((void**) &dev_scores, users*k*sizeof(int));
+
+        cudaMemcpy(dev_dataSet, dataSet, users*users*sizeof(int), cudaMemcpyHostToDevice);
+        cudaMemcpy(dev_scores, scores, users*k*sizeof(int), cudaMemcpyHostToDevice);
+
+        int numBlocks = (int) ceil(users*1.0/numThreads);
+        dim3 grid( numBlocks, numBlocks, 1 );
+        dim3 block( numThreads, numThreads, 1 );
+        calculateKNearestKernel<<< grid, block >>>(dev_dataSet, dev_scores, users, k);
+
+        cudaMemcpy(scores, dev_scores, users*k*sizeof(int), cudaMemcpyDeviceToHost);
+}
+
+void writeToFile(clock_t start, clock_t end, char * whichProgramToRun, int users, int attributes, int k, char * fileName) {
 	FILE * file;
 	if(checker(whichProgramToRun, (char*) "serial")) {
-		file = fopen("results_serial.csv", "a");
+		file = fopen(fileName, "a");
 	}else {
-		file = fopen("results_parallel.csv", "a");
+		file = fopen(fileName, "a");
 	}
         long double timeTaken = (long double)(end - start)/CLOCKS_PER_SEC;
         fprintf(file, "%s, %d, %d, %d, %Lf\n", whichProgramToRun, users, attributes, k, timeTaken);
         fclose(file);
 	printf("%s, %d, %d, %d, %Lf\n", whichProgramToRun, users, attributes, k, timeTaken);
+}
+
+void calculateKNearestSerial(int * scores, int * kNearest, int users, int K) {
+        int minValue, minIndex, value, user, k, index;
+        for(user = 0; user < users; user++) {
+                for(k = 0; k < K; k++) {
+                        minValue = MAX_VALUE;
+                        minIndex = -1;
+                        for(index = 0; index < users; index++) {
+                                value = scores[user*users + index];
+                                if(value < minValue && index != user) {
+                                        minValue = value;
+                                        minIndex = index;
+                                }
+                        }
+                        if(minIndex != -1) {
+                                // scores[user*users + minIndex] = MAX_VALUE;
+                        }
+                        // kNearest[user*users + k] = minIndex;
+                }
+        }
 }
 
 int main(int argc, char **argv) {
@@ -158,29 +218,38 @@ int main(int argc, char **argv) {
 	
 	clock_t start = clock();
 
-	// printf("Matrix:-\n");
+	printf("k = %d\n", k);
 	// printMatrix(dataSet, users, attributes);
 
 	if(checker(whichProgramToRun, (char*) "serial")) {
 		// serial
-		calculateScores(dataSet, scores, users, attributes);	
+		calculateScores(dataSet, scores, users, attributes);
+		free(dataSet);
+		int * kNearest = (int*) malloc(sizeof(int) * users * k);
+		calculateKNearestSerial(scores, kNearest, users, k);
+		free(scores);
+		free(kNearest);
 	}else if(checker(whichProgramToRun, (char*) "parallel")) {
 		// cuda parallel
 		launchCalculateScoreKernel(dataSet, scores, users, attributes);
+		free(dataSet);
+		int * kNearest = (int*) malloc(sizeof(int) * users * k);
+                launchCalculateKNearestKernel(scores, kNearest, users, k);
+                free(scores);
+                free(kNearest);
 	}else {
 		printf("Enter correct program to run: serial or parallel.\n");
 		free(dataSet); free(scores);
 		exit(0);
-	}
+	}	
 	
 	// printf("Scores:-\n");
 	// printMatrix(scores, users, users);
 
 	clock_t end = clock();
 
-	writeToFile(start, end, whichProgramToRun, users, attributes, k);
+	char * fileName = argv[5];
+	writeToFile(start, end, whichProgramToRun, users, attributes, k, fileName);
 
-	// Clean up after ourselves
-	free(dataSet); free(scores);
 	return 0;
 }
