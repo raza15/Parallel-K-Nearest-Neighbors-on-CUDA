@@ -1,4 +1,4 @@
-![alt tag]("images/Project Report-1.jpg")
+![alt tag](images/"Project Report-1.jpg")
 
 ![alt tag](images/Project Report-2.jpg)
 
